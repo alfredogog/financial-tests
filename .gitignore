@@ -1,0 +1,33 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# .NET
+bin/
+obj/
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# Playwright
+playwright-report/
+test-results/
+
+# Logs
+logs/
+*.log
+
+# IMPORTANTE
+api/
+web/
+data/
