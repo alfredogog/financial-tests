@@ -1,0 +1,2 @@
+# financial-tests
+Automação d
