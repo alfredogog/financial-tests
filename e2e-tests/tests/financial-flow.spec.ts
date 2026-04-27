@@ -6,7 +6,27 @@ import { CategoriasPage } from '../pages/CategoriasPage';
 import { TransacoesPage } from '../pages/TransacoesPage';
 import { RelatoriosPage } from '../pages/RelatoriosPage';
 
+const ApiBaseUrl = 'http://localhost:5000/api/v1';
+
 test.describe('Fluxo financeiro E2E', () => {
+  test.afterEach(async ({ request }) => {
+    const pessoasResponse = await request.get(`${ApiBaseUrl}/Pessoas?page=1&pageSize=1000`);
+
+    if (!pessoasResponse.ok()) {
+      return;
+    }
+
+    const pessoasBody = await pessoasResponse.json();
+
+    const pessoaCriada = pessoasBody.items?.find(
+      (pessoa: { id: string; nome: string }) => pessoa.nome === testData.pessoa.nome
+    );
+
+    if (pessoaCriada?.id) {
+      await request.delete(`${ApiBaseUrl}/Pessoas/${pessoaCriada.id}`);
+    }
+  });
+
   test('E2E-001 - Deve criar dados financeiros e validar totais por pessoa', async ({ page }) => {
     const basePage = new BasePage(page);
     const pessoasPage = new PessoasPage(page);

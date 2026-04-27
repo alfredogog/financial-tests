@@ -1,5 +1,5 @@
 # financial-tests
-Automação de testes para uma apldicação de controle financeiro, focado em validação de regras de negócio e estratégia de testes.
+Automação de testes para uma aplicação de controle financeiro, com foco em validação de regras de negócio, testes de integração, testes E2E e documentação de falhas encontradas.
 
 ## Observação
 O código da aplicação não foi incluído, conforme solicitado no teste técnico.
@@ -8,7 +8,80 @@ Artefatos de testes foram adicionados ao gitignore para manter o repositório li
 
 ## Como rodar a aplicação
 
-## Como rodar os testes [ extensões e comandos ]
+Antes de executar os testes, é necessário subir a aplicação original fornecida no desafio.
+
+Na raiz do projeto original da aplicação, execute:
+
+```bash
+docker compose up --build
+```
+
+A API deve ficar disponível em: http://localhost:5000
+
+Swagger: http://localhost:5000/swagger
+
+Frontend: http://localhost:5173
+
+## Como rodar os testes
+
+### Pré-requisitos
+
+Para executar os testes, é necessário ter instalado:
+
+- Docker Desktop;
+- .NET SDK 8;
+- Node.js;
+- npm;
+- Playwright.
+
+---
+
+### Testes de integração
+
+Na raiz deste repositório, execute:
+
+```bash
+dotnet test
+```
+
+Para rodar apenas os testes de integração:
+
+```bash
+cd api-tests/integration-tests/IntegrationTests
+dotnet test
+```
+
+### Testes E2E
+
+Acesse a pasta do projeto E2E:
+
+```bash
+cd e2e-tests
+```
+
+Instale as dependências:
+
+```bash
+npm install
+```
+
+Para rodar todos os testes E2E:
+
+```bash
+npx playwright test
+```
+
+Para rodar o fluxo principal com navegador visível:
+
+```bash
+npx playwright test tests/financial-flow.spec.ts --headed
+```
+
+Para abrir o relatório HTML do Playwright:
+
+```bash
+npx playwright show-report
+```
 
 ### Mapeamento de enums utilizado nos testes
 
@@ -129,11 +202,47 @@ Cenário coberto:
 
 Objetivo: garantir que, ao excluir uma pessoa, suas transações vinculadas também sejam removidas.
 
-## Resultados esperados dos testes de integração
+---
 
-Durante a execução dos testes de integração, alguns cenários podem falhar porque representam comportamentos divergentes das regras de negócio esperadas.
+### Testes E2E
 
-Essas falhas foram mantidas intencionalmente como evidência automatizada dos bugs encontrados.
+Os testes E2E foram implementados com Playwright e TypeScript, utilizando o padrão Page Object Model.
+
+A estrutura foi organizada em:
+
+- `tests/` - cenários E2E;
+- `pages/` - ações e seletores por tela;
+- `fixtures/` - massa de dados;
+- `utils/` - funções auxiliares.
+
+#### `financial-flow.spec.ts`
+
+Valida o fluxo principal da aplicação pela interface web.
+
+Cenário coberto:
+
+- acessar a aplicação;
+- criar pessoa;
+- criar categoria de receita;
+- criar categoria de despesa;
+- criar transação de receita;
+- criar transação de despesa;
+- acessar a tela de relatórios/totais;
+- validar o relatório de totais por pessoa.
+
+Esse teste valida o fluxo completo:
+
+```text
+Frontend → API → Banco de dados → Relatório na interface
+```
+
+#### Limpeza de dados no E2E
+
+Após a execução do teste E2E, a pessoa criada é removida via API no `afterEach`.
+
+Como a exclusão de pessoa remove suas transações vinculadas em cascata, as transações criadas no E2E também são removidas.
+
+As categorias criadas no teste podem permanecer no banco, pois não foi identificado endpoint para exclusão de categorias.
 
 ## Observação sobre testes com falha
 
@@ -146,6 +255,7 @@ Falhas esperadas:
 
 ### Bugs/observações relacionados
 
+- BUG-001 - API retornando 500 mas deveria retornar 400 ao tentar adicionar uma receita para um menor de idade
 - BUG-002 - API permite cadastro de categoria com finalidade inválida
 - BUG-003 - API permite transação com data anterior ao nascimento da pessoa
 - OBS-001 - API permite cadastro de transação com data futura
