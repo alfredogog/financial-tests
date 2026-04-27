@@ -12,7 +12,7 @@ Este README foi estruturado para explicar:
 
 - Como rodar os testes de integração e E2E;
 - Como a pirâmide de testes foi aplicada;
-- Quais bugs e observações foram encontrados;
+- Quais bugs, observações e achados exploratórios foram encontrados;
 - Quais decisões técnicas foram tomadas durante a construção da estratégia de testes.
 
 ## Estrutura da pirâmide de testes
@@ -88,7 +88,9 @@ financial-tests/
 │   ├── tests/
 │   └── utils/
 ├── docs/
-│   └── bugs/
+│   ├── bugs/
+│   ├── exploratory/
+│   └── images/
 ├── .gitignore
 └── README.md
 ```
@@ -315,6 +317,60 @@ Como a exclusão de pessoa remove suas transações vinculadas em cascata, as tr
 
 As categorias criadas no teste podem permanecer no banco, pois não foi identificado endpoint para exclusão de categorias.
 
+## Justificativa das escolhas de testes
+
+A maior parte dos testes foi concentrada na camada de integração porque as principais regras de negócio da aplicação estão expostas pela API e podem ser validadas de forma objetiva por meio dos endpoints.
+
+Essa abordagem permite testar regras críticas com menor custo de manutenção do que testes E2E, além de facilitar a identificação de falhas específicas em status code, payloads e persistência de dados.
+
+O teste E2E foi utilizado para validar o fluxo principal do usuário pela interface, garantindo que a aplicação funcione de ponta a ponta. A quantidade de testes E2E foi mantida reduzida de forma intencional, pois esse tipo de teste tende a ser mais lento, mais sensível a mudanças visuais e mais custoso para manutenção.
+
+Os testes unitários não foram implementados porque o código-fonte da aplicação não foi incluído neste repositório. Criar testes unitários artificiais sobre funções auxiliares do próprio projeto de testes teria baixo valor para o desafio, pois não validaria unidades reais da aplicação.
+
+Dessa forma, a estratégia priorizou testes com maior relevância para o comportamento real do sistema, mantendo rastreabilidade entre regras de negócio, evidências automatizadas e documentação dos problemas encontrados.
+
+Também foram realizados testes manuais exploratórios no frontend para complementar a automação, especialmente em pontos de usabilidade, responsividade, consistência visual e validações de formulário. Esses cenários foram documentados separadamente em arquivos `.md`, com evidências visuais, por se tratarem de achados mais adequados à análise exploratória do que à automação.
+
+## Testes manuais exploratórios
+
+Além dos testes automatizados, foram realizados testes manuais exploratórios na interface web, com foco em usabilidade, responsividade, consistência visual e validações de formulário.
+
+Esses achados foram documentados separadamente porque nem todos os problemas visuais ou de experiência do usuário são melhor representados por testes automatizados.
+
+Os documentos estão localizados em:
+
+```text
+docs/exploratory/
+```
+
+As evidências visuais estão localizadas em: `docs/images/`
+
+Achados documentados:
+
+- `FRONT-001` - Combobox de Pessoa e Categoria exige seleção manual da opção após digitação;
+- `FRONT-002` - Caractere estranho exibido no gráfico de resumo mensal;
+- `FRONT-003` - Gráfico de resumo mensal perde legibilidade em resolução reduzida;
+- `FRONT-004` - Cards principais do dashboard perdem legibilidade em resolução reduzida;
+- `FRONT-005` - Dashboard exibe categorias no resumo mensal mesmo sem transações;
+- `FRONT-006` - Inconsistência entre menu "Relatórios" e breadcrumb "Totais".
+
+## GitHub Actions
+
+A configuração de CI com GitHub Actions não foi adicionada porque este repositório contém apenas os testes automatizados e a documentação, conforme solicitado no desafio.
+
+Os testes de integração e E2E dependem da aplicação original em execução, incluindo API, frontend e banco de dados. Como o código-fonte da aplicação não deve ser versionado nem enviado junto com este repositório, o pipeline não teria acesso aos arquivos necessários para subir a aplicação via Docker Compose.
+
+Tecnicamente, o CI poderia ser viabilizado de algumas formas:
+
+- incluir o código da aplicação no mesmo repositório dos testes;
+- disponibilizar a aplicação em outro repositório acessível pelo workflow;
+- utilizar uma imagem Docker publicada da aplicação;
+- disponibilizar o pacote da aplicação como artefato externo para ser baixado durante o pipeline.
+
+Essas alternativas não foram adotadas porque poderiam ferir a regra do desafio de manter este repositório restrito apenas aos testes e à documentação, ou exigiriam um artefato externo da aplicação que não foi fornecido.
+
+Por esse motivo, a execução dos testes foi documentada para ambiente local, garantindo aderência às regras do desafio e evitando a criação de um pipeline que falharia por ausência da aplicação.
+
 ## Observação sobre testes com falha
 
 Alguns testes de integração falham intencionalmente, pois representam comportamentos divergentes das regras esperadas e foram mantidos como evidência automatizada dos bugs documentados.
@@ -370,14 +426,18 @@ Comportamento encontrado: a API permite cadastrar transação com data futura, r
 
 Classificação: foi documentado como observação, e não como bug crítico, porque a regra de data futura não está explicitamente descrita no escopo funcional. Dependendo da proposta do produto, transações futuras poderiam representar previsão, planejamento ou agendamento financeiro.
 
-## Justificativa das escolhas de testes
+---
 
-A maior parte dos testes foi concentrada na camada de integração porque as principais regras de negócio da aplicação estão expostas pela API e podem ser validadas de forma objetiva por meio dos endpoints.
+## Observações finais
 
-Essa abordagem permite testar regras críticas com menor custo de manutenção do que testes E2E, além de facilitar a identificação de falhas específicas em status code, payloads e persistência de dados.
+A estratégia de testes foi construída com foco nas regras de negócio principais do sistema de controle financeiro, priorizando cenários de maior impacto para o domínio da aplicação.
 
-O teste E2E foi utilizado para validar o fluxo principal do usuário pela interface, garantindo que a aplicação funcione de ponta a ponta. A quantidade de testes E2E foi mantida reduzida de forma intencional, pois esse tipo de teste tende a ser mais lento, mais sensível a mudanças visuais e mais custoso para manutenção.
+Os testes de integração foram concentrados na API por permitirem validar diretamente regras como menor de idade sem receita, compatibilidade entre categoria e tipo de transação, totais por pessoa e exclusão em cascata.
 
-Os testes unitários não foram implementados porque o código-fonte da aplicação não foi incluído neste repositório. Criar testes unitários artificiais sobre funções auxiliares do próprio projeto de testes teria baixo valor para o desafio, pois não validaria unidades reais da aplicação.
+O teste E2E foi utilizado para validar o fluxo principal pela interface web, garantindo que as ações realizadas pelo usuário reflitam corretamente no relatório de totais por pessoa.
 
-Dessa forma, a estratégia priorizou testes com maior relevância para o comportamento real do sistema, mantendo rastreabilidade entre regras de negócio, evidências automatizadas e documentação dos problemas encontrados.
+Os testes unitários e a configuração de CI com GitHub Actions não foram implementados por limitações relacionadas ao escopo do desafio: o código-fonte da aplicação original não deveria ser alterado nem versionado neste repositório, e os testes dependem da aplicação em execução localmente.
+
+Além dos testes automatizados, foram documentados achados manuais exploratórios relacionados à usabilidade, responsividade, consistência visual e validações de formulário.
+
+As falhas encontradas foram documentadas em arquivos `.md`, sem qualquer alteração no código da aplicação, mantendo o repositório restrito aos artefatos de teste e documentação.
