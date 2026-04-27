@@ -4,7 +4,61 @@ Automação de testes para uma aplicação de controle financeiro, com foco em v
 ## Observação
 O código da aplicação não foi incluído, conforme solicitado no teste técnico.
 
-Artefatos de testes foram adicionados ao gitignore para manter o repositório limpo e focado nos códigos de teste.
+Artefatos de execução, dependências locais e arquivos de build foram adicionados ao `.gitignore` para manter o repositório limpo e focado nos códigos de teste.
+
+## Atendimento aos critérios do desafio
+
+Este README foi estruturado para explicar:
+
+- Como rodar os testes de integração e E2E;
+- Como a pirâmide de testes foi aplicada;
+- Quais bugs e observações foram encontrados;
+- Quais decisões técnicas foram tomadas durante a construção da estratégia de testes.
+
+## Estrutura da pirâmide de testes
+
+A estratégia de testes foi organizada com base na pirâmide de testes, priorizando cenários de maior valor para o domínio da aplicação.
+
+### Base da pirâmide - Testes unitários
+
+Os testes unitários não foram implementados neste repositório porque o código-fonte da aplicação não deveria ser alterado nem versionado junto com a solução do desafio.
+
+Como os testes foram construídos de forma externa à aplicação, não havia acesso direto às classes internas de domínio, serviços, validadores, componentes ou funções utilitárias para testá-las de maneira isolada sem copiar parte do código da aplicação para este repositório.
+
+Por esse motivo, a estratégia priorizou:
+
+- testes de integração via API, validando regras de negócio com a aplicação em execução;
+- testes E2E com Playwright, validando o fluxo principal do usuário pela interface web.
+
+Testes unitários de frontend com Vitest também não foram implementados, pois exigiriam acesso ao código-fonte do frontend, como componentes, hooks ou funções internas.
+
+Essa decisão evita duplicação ou cópia indevida do código da aplicação original e mantém o repositório restrito aos artefatos de teste solicitados.
+
+### Meio da pirâmide - Testes de integração
+
+Os testes de integração foram priorizados porque permitem validar as principais regras de negócio da API de forma direta, rápida e com maior estabilidade do que testes exclusivamente pela interface.
+
+Eles validam a comunicação entre:
+
+- endpoints HTTP;
+- regras de negócio;
+- persistência de dados;
+- respostas retornadas pela API.
+
+Essa camada concentrou a maior parte dos cenários automatizados.
+
+### Topo da pirâmide - Testes E2E
+
+Os testes E2E foram implementados com Playwright e TypeScript para validar o fluxo principal do usuário pela interface web.
+
+Como testes E2E são mais custosos, lentos e sensíveis a alterações visuais, foi implementado um fluxo principal de ponta a ponta, cobrindo:
+
+- criação de pessoa;
+- criação de categorias;
+- criação de transações;
+- validação do relatório de totais por pessoa.
+
+Esse teste valida a integração completa entre frontend, API, banco de dados e retorno visual para o usuário.
 
 ## Como rodar a aplicação
 
@@ -16,11 +70,28 @@ Na raiz do projeto original da aplicação, execute:
 docker compose up --build
 ```
 
-A API deve ficar disponível em: http://localhost:5000
+A API deve ficar disponível em: `http://localhost:5000`
 
-Swagger: http://localhost:5000/swagger
+Swagger: `http://localhost:5000/swagger`
 
-Frontend: http://localhost:5173
+Frontend: `http://localhost:5173`
+
+## Estrutura do projeto
+
+```text
+financial-tests/
+├── api-tests/
+│   └── integration-tests/
+├── e2e-tests/
+│   ├── fixtures/
+│   ├── pages/
+│   ├── tests/
+│   └── utils/
+├── docs/
+│   └── bugs/
+├── .gitignore
+└── README.md
+```
 
 ## Como rodar os testes
 
@@ -253,11 +324,60 @@ Falhas esperadas:
 - BUG-003 - API permite transação anterior ao nascimento da pessoa
 - OBS-001 - API permite transação com data futura
 
-### Bugs/observações relacionados
+## Bugs encontrados e regras impactadas
 
-- BUG-001 - API retornando 500 mas deveria retornar 400 ao tentar adicionar uma receita para um menor de idade
-- BUG-002 - API permite cadastro de categoria com finalidade inválida
-- BUG-003 - API permite transação com data anterior ao nascimento da pessoa
-- OBS-001 - API permite cadastro de transação com data futura
+### `BUG-001` - Receita para menor de idade retorna erro interno
 
-Os detalhes estão documentados em `/docs/bugs`.
+Regra esperada: uma pessoa menor de idade não deve possuir transação do tipo receita.
+
+Comportamento encontrado: a API bloqueia a operação, porém retorna `500 Internal Server Error` em vez de retornar um erro de validação adequado, como `400 Bad Request`.
+
+Impacto: a regra de negócio é aplicada, mas a resposta HTTP não comunica corretamente o erro ao consumidor da API.
+
+---
+
+### `BUG-002` - Categoria aceita finalidade inválida
+
+Regra esperada: a API deve aceitar apenas finalidades conhecidas para categoria.
+
+Valores válidos identificados:
+
+- `0` = Despesa;
+- `1` = Receita;
+- `2` = Ambas.
+
+Comportamento encontrado: a API permite cadastrar categoria com `finalidade = 3`, retornando `201 Created`.
+
+Impacto: permite persistência de dados inválidos e pode comprometer regras futuras relacionadas à classificação de categorias.
+
+---
+
+### `BUG-003` - Transação anterior ao nascimento da pessoa
+
+Regra esperada: uma pessoa não deveria possuir registros financeiros anteriores à sua data de nascimento.
+
+Comportamento encontrado: a API permite cadastrar transação com data anterior ao nascimento da pessoa, retornando `201 Created`.
+
+Impacto: gera inconsistência cronológica nos dados financeiros.
+
+---
+
+### `OBS-001` - Transação com data futura
+
+Hipótese avaliada: como o sistema foi interpretado como controle de gastos residenciais, foi considerado que as transações representariam eventos financeiros já realizados.
+
+Comportamento encontrado: a API permite cadastrar transação com data futura, retornando `201 Created`.
+
+Classificação: foi documentado como observação, e não como bug crítico, porque a regra de data futura não está explicitamente descrita no escopo funcional. Dependendo da proposta do produto, transações futuras poderiam representar previsão, planejamento ou agendamento financeiro.
+
+## Justificativa das escolhas de testes
+
+A maior parte dos testes foi concentrada na camada de integração porque as principais regras de negócio da aplicação estão expostas pela API e podem ser validadas de forma objetiva por meio dos endpoints.
+
+Essa abordagem permite testar regras críticas com menor custo de manutenção do que testes E2E, além de facilitar a identificação de falhas específicas em status code, payloads e persistência de dados.
+
+O teste E2E foi utilizado para validar o fluxo principal do usuário pela interface, garantindo que a aplicação funcione de ponta a ponta. A quantidade de testes E2E foi mantida reduzida de forma intencional, pois esse tipo de teste tende a ser mais lento, mais sensível a mudanças visuais e mais custoso para manutenção.
+
+Os testes unitários não foram implementados porque o código-fonte da aplicação não foi incluído neste repositório. Criar testes unitários artificiais sobre funções auxiliares do próprio projeto de testes teria baixo valor para o desafio, pois não validaria unidades reais da aplicação.
+
+Dessa forma, a estratégia priorizou testes com maior relevância para o comportamento real do sistema, mantendo rastreabilidade entre regras de negócio, evidências automatizadas e documentação dos problemas encontrados.
