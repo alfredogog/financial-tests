@@ -32,7 +32,7 @@ jobs:
         run: dotnet build financial-tests.sln --configuration Release --no-restore
 
       - name: List API tests
-        run: dotnet test financial-tests.sln --no-build --list-tests
+        run: dotnet test financial-tests.sln --configuration Release --no-build --list-tests
 
   validate-e2e-tests:
     name: Validate Playwright Tests
@@ -61,4 +61,3 @@ jobs:
 
       - name: List Playwright tests
         run: npx playwright test --list
-        
