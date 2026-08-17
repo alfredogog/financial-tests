@@ -31,6 +31,8 @@ public class TransacoesDateRulesTests : IAsyncLifetime
     }
 
     [Fact(DisplayName = "Regra de negócio: não deve permitir transação com data futura")]
+    [Trait("Category", "KnownIssue")]
+    [Trait("Issue", "OBS-001")]
     public async Task Nao_Deve_Permitir_Transacao_Com_Data_Futura()
     {
         var pessoa = await CriarPessoa(DateTime.Today.AddYears(-30));
@@ -48,6 +50,8 @@ public class TransacoesDateRulesTests : IAsyncLifetime
     }
 
     [Fact(DisplayName = "Regra de negócio: não deve permitir transação antes do nascimento da pessoa")]
+    [Trait("Category", "KnownIssue")]
+    [Trait("Issue", "BUG-003")]
     public async Task Nao_Deve_Permitir_Transacao_Antes_Do_Nascimento_Da_Pessoa()
     {
         var dataNascimento = DateTime.Today.AddYears(-20);

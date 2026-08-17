@@ -8,6 +8,8 @@ namespace IntegrationTests.Categorias;
 public class CategoriasValidationTests
 {
     [Fact(DisplayName = "Regra de validação: não deve permitir finalidade de categoria inválida")]
+    [Trait("Category", "KnownIssue")]
+    [Trait("Issue", "BUG-002")]
     public async Task Nao_Deve_Permitir_Finalidade_De_Categoria_Invalida()
     {
         using var client = new HttpClient();

@@ -17,6 +17,10 @@ on:
 
   workflow_dispatch:
 
+env:
+  API_BASE_URL: http://localhost:5000/api/v1
+  E2E_BASE_URL: http://localhost:5173
+
 jobs:
   build-api-tests:
     name: Build API Tests
@@ -37,8 +41,21 @@ jobs:
       - name: Build solution
         run: dotnet build financial-tests.sln --configuration Release --no-restore
 
-      - name: List API tests
-        run: dotnet test financial-tests.sln --configuration Release --no-build --list-tests
+      - name: List CI API tests
+        run: >
+          dotnet test financial-tests.sln
+          --configuration Release
+          --no-build
+          --filter "Category!=KnownIssue"
+          --list-tests
+
+      - name: List known issues
+        run: >
+          dotnet test financial-tests.sln
+          --configuration Release
+          --no-build
+          --filter "Category=KnownIssue"
+          --list-tests
 
   validate-e2e-tests:
     name: Validate Playwright Tests
