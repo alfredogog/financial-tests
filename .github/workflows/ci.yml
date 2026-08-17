@@ -76,6 +76,8 @@ jobs:
           --configuration Release
           --no-build
           --filter "Category!=KnownIssue"
+          --logger "trx;LogFileName=api-regression-tests.trx"
+          --results-directory TestResults
           --logger "console;verbosity=normal"
 
       - name: List known issues
@@ -86,6 +88,14 @@ jobs:
           --no-build
           --filter "Category=KnownIssue"
           --list-tests
+
+      - name: Upload API test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-regression-test-results
+          path: TestResults/
+          retention-days: 14
 
       - name: Show Mock API logs on failure
         if: failure()
