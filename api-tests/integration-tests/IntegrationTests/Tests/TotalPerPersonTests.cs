@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using IntegrationTests.Config;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -8,8 +9,6 @@ namespace IntegrationTests.Totais;
 
 public class TotaisPorPessoaTests : IAsyncLifetime
 {
-    private const string BaseUrl = "http://localhost:5000/api/v1";
-
     private const int TipoDespesa = 0;
     private const int TipoReceita = 1;
 
@@ -35,8 +34,13 @@ public class TotaisPorPessoaTests : IAsyncLifetime
     {
         foreach (var pessoaId in _pessoasCriadas)
         {
-            var response = await _client.DeleteAsync($"{BaseUrl}/Pessoas/{pessoaId}");
-            _output.WriteLine($"Cleanup pessoa {pessoaId}: {response.StatusCode}");
+            var response = await _client.DeleteAsync(
+                $"{TestConfig.ApiBaseUrl}/Pessoas/{pessoaId}"
+            );
+
+            _output.WriteLine(
+                $"Cleanup pessoa {pessoaId}: {response.StatusCode}"
+            );
         }
 
         _client.Dispose();
@@ -45,12 +49,30 @@ public class TotaisPorPessoaTests : IAsyncLifetime
     [Fact(DisplayName = "Relatório: deve isolar pessoa com receita, pessoa com despesa e pessoa com ambos")]
     public async Task Deve_Isolar_Pessoa_Com_Receita_Pessoa_Com_Despesa_E_Pessoa_Com_Ambos()
     {
-        var pessoaReceita = await CriarPessoa(DateTime.Today.AddYears(-30), "Pessoa Receita");
-        var pessoaDespesa = await CriarPessoa(DateTime.Today.AddYears(-35), "Pessoa Despesa");
-        var pessoaAmbos = await CriarPessoa(DateTime.Today.AddYears(-40), "Pessoa Ambos");
+        var pessoaReceita = await CriarPessoa(
+            DateTime.Today.AddYears(-30),
+            "Pessoa Receita"
+        );
 
-        var categoriaReceita = await CriarCategoria(CategoriaReceita, "Categoria Receita");
-        var categoriaDespesa = await CriarCategoria(CategoriaDespesa, "Categoria Despesa");
+        var pessoaDespesa = await CriarPessoa(
+            DateTime.Today.AddYears(-35),
+            "Pessoa Despesa"
+        );
+
+        var pessoaAmbos = await CriarPessoa(
+            DateTime.Today.AddYears(-40),
+            "Pessoa Ambos"
+        );
+
+        var categoriaReceita = await CriarCategoria(
+            CategoriaReceita,
+            "Categoria Receita"
+        );
+
+        var categoriaDespesa = await CriarCategoria(
+            CategoriaDespesa,
+            "Categoria Despesa"
+        );
 
         await CriarTransacao(
             tipo: TipoReceita,
@@ -86,17 +108,30 @@ public class TotaisPorPessoaTests : IAsyncLifetime
 
         var totais = await ObterTotaisPorPessoa();
 
-        var totalPessoaReceita = totais.FirstOrDefault(t => t.PessoaId == pessoaReceita.Id);
-        var totalPessoaDespesa = totais.FirstOrDefault(t => t.PessoaId == pessoaDespesa.Id);
-        var totalPessoaAmbos = totais.FirstOrDefault(t => t.PessoaId == pessoaAmbos.Id);
+        var totalPessoaReceita =
+            totais.FirstOrDefault(t => t.PessoaId == pessoaReceita.Id);
+
+        var totalPessoaDespesa =
+            totais.FirstOrDefault(t => t.PessoaId == pessoaDespesa.Id);
+
+        var totalPessoaAmbos =
+            totais.FirstOrDefault(t => t.PessoaId == pessoaAmbos.Id);
 
         _output.WriteLine($"Pessoa receita criada: {pessoaReceita.Id}");
         _output.WriteLine($"Pessoa despesa criada: {pessoaDespesa.Id}");
         _output.WriteLine($"Pessoa ambos criada: {pessoaAmbos.Id}");
 
-        _output.WriteLine($"Pessoa receita encontrada no relatório: {totalPessoaReceita is not null}");
-        _output.WriteLine($"Pessoa despesa encontrada no relatório: {totalPessoaDespesa is not null}");
-        _output.WriteLine($"Pessoa ambos encontrada no relatório: {totalPessoaAmbos is not null}");
+        _output.WriteLine(
+            $"Pessoa receita encontrada no relatório: {totalPessoaReceita is not null}"
+        );
+
+        _output.WriteLine(
+            $"Pessoa despesa encontrada no relatório: {totalPessoaDespesa is not null}"
+        );
+
+        _output.WriteLine(
+            $"Pessoa ambos encontrada no relatório: {totalPessoaAmbos is not null}"
+        );
 
         Assert.NotNull(totalPessoaReceita);
         Assert.NotNull(totalPessoaDespesa);
@@ -117,7 +152,9 @@ public class TotaisPorPessoaTests : IAsyncLifetime
 
     private async Task<List<TotaisPorPessoaResponse>> ObterTotaisPorPessoa()
     {
-        var response = await _client.GetAsync($"{BaseUrl}/Totais/pessoas?page=1&pageSize=1000");
+        var response = await _client.GetAsync(
+            $"{TestConfig.ApiBaseUrl}/Totais/pessoas?page=1&pageSize=1000"
+        );
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -127,10 +164,11 @@ public class TotaisPorPessoaTests : IAsyncLifetime
         _output.WriteLine(json);
         _output.WriteLine("====================================");
 
-        var resultado = JsonSerializer.Deserialize<PaginacaoResponse<TotaisPorPessoaResponse>>(
-            json,
-            JsonOptions()
-        );
+        var resultado =
+            JsonSerializer.Deserialize<PaginacaoResponse<TotaisPorPessoaResponse>>(
+                json,
+                JsonOptions()
+            );
 
         Assert.NotNull(resultado);
         Assert.NotNull(resultado!.Items);
@@ -138,13 +176,19 @@ public class TotaisPorPessoaTests : IAsyncLifetime
         return resultado.Items;
     }
 
-    private async Task<PessoaResponse> CriarPessoa(DateTime dataNascimento, string prefixoNome)
+    private async Task<PessoaResponse> CriarPessoa(
+        DateTime dataNascimento,
+        string prefixoNome
+    )
     {
-        var response = await _client.PostAsJsonAsync($"{BaseUrl}/Pessoas", new
-        {
-            nome = $"{prefixoNome} {Guid.NewGuid()}",
-            dataNascimento
-        });
+        var response = await _client.PostAsJsonAsync(
+            $"{TestConfig.ApiBaseUrl}/Pessoas",
+            new
+            {
+                nome = $"{prefixoNome} {Guid.NewGuid()}",
+                dataNascimento
+            }
+        );
 
         var responseBody = await response.Content.ReadAsStringAsync();
 
@@ -165,13 +209,19 @@ public class TotaisPorPessoaTests : IAsyncLifetime
         return pessoa;
     }
 
-    private async Task<CategoriaResponse> CriarCategoria(int finalidade, string prefixoDescricao)
+    private async Task<CategoriaResponse> CriarCategoria(
+        int finalidade,
+        string prefixoDescricao
+    )
     {
-        var response = await _client.PostAsJsonAsync($"{BaseUrl}/Categorias", new
-        {
-            descricao = $"{prefixoDescricao} {Guid.NewGuid()}",
-            finalidade
-        });
+        var response = await _client.PostAsJsonAsync(
+            $"{TestConfig.ApiBaseUrl}/Categorias",
+            new
+            {
+                descricao = $"{prefixoDescricao} {Guid.NewGuid()}",
+                finalidade
+            }
+        );
 
         var responseBody = await response.Content.ReadAsStringAsync();
 
@@ -193,17 +243,21 @@ public class TotaisPorPessoaTests : IAsyncLifetime
         Guid categoriaId,
         Guid pessoaId,
         decimal valor,
-        string descricao)
+        string descricao
+    )
     {
-        var response = await _client.PostAsJsonAsync($"{BaseUrl}/Transacoes", new
-        {
-            descricao,
-            valor,
-            tipo,
-            categoriaId,
-            pessoaId,
-            data = DateTime.Today
-        });
+        var response = await _client.PostAsJsonAsync(
+            $"{TestConfig.ApiBaseUrl}/Transacoes",
+            new
+            {
+                descricao,
+                valor,
+                tipo,
+                categoriaId,
+                pessoaId,
+                data = DateTime.Today
+            }
+        );
 
         var responseBody = await response.Content.ReadAsStringAsync();
 

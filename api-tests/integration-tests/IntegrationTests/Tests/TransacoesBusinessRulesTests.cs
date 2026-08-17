@@ -1,13 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
+using IntegrationTests.Config;
 using Xunit;
 
 namespace IntegrationTests.Transacoes;
 
 public class TransacoesBusinessRulesTests : IAsyncLifetime
 {
-    private const string BaseUrl = "http://localhost:5000/api/v1";
-
     private const int TipoDespesa = 0;
     private const int TipoReceita = 1;
 
@@ -27,7 +26,9 @@ public class TransacoesBusinessRulesTests : IAsyncLifetime
     {
         foreach (var pessoaId in _pessoasCriadas)
         {
-            await _client.DeleteAsync($"{BaseUrl}/Pessoas/{pessoaId}");
+            await _client.DeleteAsync(
+                $"{TestConfig.ApiBaseUrl}/Pessoas/{pessoaId}"
+            );
         }
 
         _client.Dispose();
@@ -124,15 +125,19 @@ public class TransacoesBusinessRulesTests : IAsyncLifetime
 
     private async Task<PessoaResponse> CriarPessoa(DateTime dataNascimento)
     {
-        var response = await _client.PostAsJsonAsync($"{BaseUrl}/Pessoas", new
-        {
-            nome = $"Pessoa Teste {Guid.NewGuid()}",
-            dataNascimento
-        });
+        var response = await _client.PostAsJsonAsync(
+            $"{TestConfig.ApiBaseUrl}/Pessoas",
+            new
+            {
+                nome = $"Pessoa Teste {Guid.NewGuid()}",
+                dataNascimento
+            }
+        );
 
         response.EnsureSuccessStatusCode();
 
-        var pessoa = (await response.Content.ReadFromJsonAsync<PessoaResponse>())!;
+        var pessoa =
+            (await response.Content.ReadFromJsonAsync<PessoaResponse>())!;
 
         _pessoasCriadas.Add(pessoa.Id);
 
@@ -141,11 +146,14 @@ public class TransacoesBusinessRulesTests : IAsyncLifetime
 
     private async Task<CategoriaResponse> CriarCategoria(int finalidade)
     {
-        var response = await _client.PostAsJsonAsync($"{BaseUrl}/Categorias", new
-        {
-            descricao = $"Categoria Teste {Guid.NewGuid()}",
-            finalidade
-        });
+        var response = await _client.PostAsJsonAsync(
+            $"{TestConfig.ApiBaseUrl}/Categorias",
+            new
+            {
+                descricao = $"Categoria Teste {Guid.NewGuid()}",
+                finalidade
+            }
+        );
 
         response.EnsureSuccessStatusCode();
 
@@ -156,17 +164,21 @@ public class TransacoesBusinessRulesTests : IAsyncLifetime
         int tipo,
         Guid categoriaId,
         Guid pessoaId,
-        string descricao)
+        string descricao
+    )
     {
-        return await _client.PostAsJsonAsync($"{BaseUrl}/Transacoes", new
-        {
-            descricao,
-            valor = 100,
-            tipo,
-            categoriaId,
-            pessoaId,
-            data = DateTime.Today
-        });
+        return await _client.PostAsJsonAsync(
+            $"{TestConfig.ApiBaseUrl}/Transacoes",
+            new
+            {
+                descricao,
+                valor = 100,
+                tipo,
+                categoriaId,
+                pessoaId,
+                data = DateTime.Today
+            }
+        );
     }
 
     private record PessoaResponse(Guid Id);
