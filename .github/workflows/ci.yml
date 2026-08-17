@@ -31,6 +31,9 @@ jobs:
       - name: Build solution
         run: dotnet build financial-tests.sln --configuration Release --no-restore
 
+      - name: List API tests
+        run: dotnet test financial-tests.sln --no-build --list-tests
+
   validate-e2e-tests:
     name: Validate Playwright Tests
     runs-on: ubuntu-latest
@@ -55,3 +58,7 @@ jobs:
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
+
+      - name: List Playwright tests
+        run: npx playwright test --list
+        
