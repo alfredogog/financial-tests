@@ -18,12 +18,12 @@ on:
   workflow_dispatch:
 
 env:
-  API_BASE_URL: http://localhost:5000/api/v1
-  E2E_BASE_URL: http://localhost:5173
+  API_BASE_URL: http://127.0.0.1:5000/api/v1
+  E2E_BASE_URL: http://127.0.0.1:5173
 
 jobs:
-  build-api-tests:
-    name: Build API Tests
+  api-tests:
+    name: API Regression Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -41,21 +41,55 @@ jobs:
       - name: Build solution
         run: dotnet build financial-tests.sln --configuration Release --no-restore
 
-      - name: List CI API tests
+      - name: Start Mock API
+        run: |
+          dotnet run \
+            --project mock-api/FinancialMockApi.csproj \
+            --configuration Release \
+            --no-build \
+            --urls http://127.0.0.1:5000 \
+            > mock-api.log 2>&1 &
+
+          echo $! > mock-api.pid
+
+      - name: Wait for Mock API
+        run: |
+          echo "Waiting for Mock API..."
+
+          for i in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:5000/health > /dev/null; then
+              echo "Mock API is ready."
+              exit 0
+            fi
+
+            echo "Attempt $i/30 - API not ready yet..."
+            sleep 2
+          done
+
+          echo "Mock API did not become ready."
+          cat mock-api.log
+          exit 1
+
+      - name: Run API regression tests
         run: >
           dotnet test financial-tests.sln
           --configuration Release
           --no-build
           --filter "Category!=KnownIssue"
-          --list-tests
+          --logger "console;verbosity=normal"
 
       - name: List known issues
+        if: always()
         run: >
           dotnet test financial-tests.sln
           --configuration Release
           --no-build
           --filter "Category=KnownIssue"
           --list-tests
+
+      - name: Show Mock API logs on failure
+        if: failure()
+        run: cat mock-api.log
 
   validate-e2e-tests:
     name: Validate Playwright Tests
